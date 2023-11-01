@@ -1,12 +1,9 @@
 import streamlit as st
 import cv2
 import yaml
-import utils as util
 from PIL import Image
 from deepface import DeepFace
 import numpy as np
-from streamlit_extras.app_logo import add_logo
-# from recognition import draw_result
 
 
 # Path: code\app.py
