@@ -1,6 +1,6 @@
-deepface==0.0.79
-matplotlib==3.8.0
-numpy==1.26.1
-Pillow==10.1.0
-PyYAML==6.0.1
-streamlit==1.28.0
+deepface
+matplotlib
+numpy
+Pillow
+PyYAML
+streamlit
