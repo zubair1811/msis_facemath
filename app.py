@@ -1,172 +1,229 @@
 import streamlit as st
-import cv2
-import yaml
-from PIL import Image
 from deepface import DeepFace
+from streamlit_option_menu import option_menu
+import os
+from PIL import Image
+import cv2
 import numpy as np
 
+def draw_box_on_img(img, bbox, ver_stat):
+    x, y, w, h = bbox
+    # Draw the bounding box rectangle on the image
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    if ver_stat:
+        color = (0,255,0)
+    else: 
+        color = (255, 0, 0)
+    image_np = cv2.rectangle(img, (x, y), (x+w, y+h), color=color, thickness=3)
 
-# Path: code\app.py
-st.set_page_config(layout="wide")
+    # Convert the image back to PIL format
+    image_pil = Image.fromarray(image_np)
 
+    return image_pil.resize((640, 800))
 
-red_color = (0, 0, 255)
-green_color = (0, 255, 0)
-blue_color = (255, 0, 0)
-black_color = (0, 0, 0)
-white_color = (255, 255, 255)
+def face_recognition(img1, img2):
+    
 
-# font
-font = cv2.FONT_HERSHEY_SIMPLEX
-font_scale = 10
+    image1 = np.array(Image.open(img1))
+    image2 = np.array(Image.open(img2))
+    # image1 = cv2.imread(img1)
+    # image2 = cv2.imread(img2)
+    
+    image1 = cv2.cvtColor(image1, cv2.COLOR_RGBA2BGR)
+    image2 = cv2.cvtColor(image2, cv2.COLOR_RGBA2BGR)
+    
+    verification_result = DeepFace.verify(img1_path=image1, img2_path= image2, 
+                                            detector_backend='mtcnn')
+    
+    #####
+    verify_stat = verification_result['verified']
+    # st.write(verify_stat)
 
+    img1_box_x = verification_result['facial_areas']['img1']['x']
+    img1_box_y = verification_result['facial_areas']['img1']['y']
+    img1_box_w = verification_result['facial_areas']['img1']['w']
+    img1_box_h = verification_result['facial_areas']['img1']['h']
 
-def draw_result(text, color, img_face, img_card):
-    font_scale = 5
-    box_width = face_rb_point[0] - face_lt_point[0]
-    (text_width, text_height) = cv2.getTextSize(
-        text, font, fontScale=font_scale, thickness=1
-    )[0]
-    while text_width > box_width:
-        font_scale = font_scale - 0.1
-        (text_width, text_height) = cv2.getTextSize(
-            text, font, fontScale=font_scale, thickness=1
-        )[0]
-    thickness = 10
-    box_coords = (
-        (face_lt_point[0], face_lt_point[1]),
-        (
-            face_rb_point[0],
-            face_lt_point[1] - text_height,
-        ),
-    )
+    img2_box_x = verification_result['facial_areas']['img2']['x']
+    img2_box_y = verification_result['facial_areas']['img2']['y']
+    img2_box_w = verification_result['facial_areas']['img2']['w']
+    img2_box_h = verification_result['facial_areas']['img2']['h']
 
-    cv2.rectangle(img_face, box_coords[0], box_coords[1], color, cv2.FILLED)
-    cv2.rectangle(img_face, box_coords[0], box_coords[1], color, thickness=thickness)
-    cv2.rectangle(
-        img=img_card,
-        pt2=card_rb_point,
-        pt1=card_lt_point,
-        color=color,
-        thickness=thickness,
-    )
-    cv2.rectangle(
-        img=img_face,
-        pt1=face_lt_point,
-        pt2=face_rb_point,
-        color=color,
-        thickness=thickness,
-    )
-    cv2.putText(
-        img=img_face,
-        text=text,
-        org=box_coords[0],
-        fontFace=font,
-        fontScale=font_scale,
-        color=white_color,
-        thickness=5,
-    )
-    cv2.putText(
-        img=img_face,
-        text=text,
-        org=box_coords[0],
-        fontFace=font,
-        fontScale=font_scale,
-        color=black_color,
-        thickness=5,
-    )
+    img1_box = [img1_box_x, img1_box_y, img1_box_w, img1_box_h]
+    img2_box = [img2_box_x, img2_box_y, img2_box_w, img2_box_h]
+
+    draw_img1 = draw_box_on_img(np.array(image1), img1_box, ver_stat=verify_stat)
+    draw_img2 = draw_box_on_img(np.array(image2), img2_box, ver_stat= verify_stat)
+
+    return draw_img1, draw_img2, verify_stat
+
+def add_img_to_database():
+    st.header('This is the database')
+    tab1, tab2 = st.tabs(['View images on database', 'Upload images to the database'])
+    with tab2:
+        images = st.file_uploader('Upload images to the databse', accept_multiple_files= True,
+                                type=['jpg', 'jpeg', 'png'])
+    with tab1:
+        if images is None:
+            st.write('There is no images in the database')
+        if images is not None:
+            pass
 
 
-# add  logo
-with st.sidebar:
-  st.image("./logo.png", width=300)
 
-### add some slidebar menu
-menu = ["Picture","Webcam"]
-choice = st.sidebar.selectbox("Input type",menu)
-st.sidebar.date_input("Current Date")
-
-
-#Config
-cfg = yaml.load(open('config.yaml','r'),Loader=yaml.FullLoader)
-PICTURE_PROMPT = cfg['INFO']['PICTURE_PROMPT']
-WEBCAM_PROMPT = cfg['INFO']['WEBCAM_PROMPT']
-
-# st.sidebar.title("Settings")
-
-# menu = ["Picture","Webcam"]
-# choice = st.sidebar.selectbox("Input type",menu)
-
-# if choice == "Picture":
-st.title("AI Face Matching App")
-st.write(PICTURE_PROMPT)
-column1, column2 = st.columns(2)
-with column1:
-    image1 = st.file_uploader("Reference Image", type=['jpg','png', 'jpeg'])
-with column2:
-    image2 = st.file_uploader("Target Image", type=['jpg','png','jpeg'])
-
-if (image1 is not None) & (image2  is not None):
+def verifcation_page(drawed_img1, drawed_img2, verification_stat):
+    st.subheader('This is the verification results...')
     col1, col2 = st.columns(2)
-
-    ### cover PIL image into numpy array
-    image1_org=np.array(Image.open(image1))
-    image2_org=np.array(Image.open(image2))
-    
-    ### conver the Pillow: RGB to cv2: BGR formate
-    image1 = cv2.cvtColor(image1_org, cv2.COLOR_RGBA2BGR)
-    image2 = cv2.cvtColor(image2_org, cv2.COLOR_RGBA2BGR)
-
-    ## dispaly input images on app
     with col1:
-        st.image(image1_org, width=600)
+        st.image(drawed_img1, caption='This is your referenced images')
     with col2:
-        st.image(image2_org,width=600)
+        st.image(drawed_img2, caption= 'This is your test image')
+    ncol1, ncol2, ncol3 = st.columns(3)
+    if verification_stat:
+        with ncol2:
+            st.markdown("<h1 style='text-align: center; font-size: 30px; \
+                        color: green; background-color: white;'>Verification Success!!!</h1>", 
+                        unsafe_allow_html=True)
+    else: 
+        with ncol2:
+            st.markdown("<h1 style='text-align: center; font-size: 30px; \
+                        color: red; background-color: white;'>Face unmatched!!!</h1>", 
+                        unsafe_allow_html=True)
 
-#### Run the deepface algo
-with column2:
-    if st.button("Plesae Click for Face Varification"):
-        result =  DeepFace.verify(img1_path=image1,img2_path=image2,detector_backend="opencv",)
-        
-        # get face area
-        card_lt_point = (
-        result["facial_areas"]["img1"]["x"],
-        result["facial_areas"]["img1"]["y"],
+def top_page_stateless():
+    col1, col2 = st.columns([9,1])
+    with col1: 
+        st.title('AI Face Matching Demo')
+    with col2:
+        st.image('./logo.png', width=80)
+    st.markdown("\n\n")
+    st.caption('This is a demo where you can test the faces between 2 individuals and show if it is the same person')
+    with st.sidebar:
+        selected = option_menu(
+            menu_title = 'Main Menu',
+            options = ['Test between 2 images',
+                       'Test image with database',
+                       'Database images',
+                       'Setting'],
+            icons= ['images', 'database-fill-check', 'database', 'gear'],
+            menu_icon='list',
+            default_index= 0,
         )
-        card_rb_point = (
-        result["facial_areas"]["img1"]["x"] + result["facial_areas"]["img1"]["w"],
-        result["facial_areas"]["img1"]["y"] + result["facial_areas"]["img1"]["h"],
-        )
+    return selected
 
-        face_lt_point = (
-        result["facial_areas"]["img2"]["x"],
-        result["facial_areas"]["img2"]["y"],
-        )
-        face_rb_point = (
-        result["facial_areas"]["img2"]["x"] + result["facial_areas"]["img2"]["w"],
-        result["facial_areas"]["img2"]["y"] + result["facial_areas"]["img2"]["h"],
-        )
+def test_2_img_page():
+    st.subheader('Test between 2 images to see if it is the same person')
+    tab1, tab2 = st.tabs(['Upload from local file', 'Take a photo'])
+    with tab1:
+        t1col1, t1col2 = st.columns(2)
+        with t1col1:
+            t1img1 = st.file_uploader('Upload your reference image...',accept_multiple_files= False, 
+                                      type = ['jpg', 'jpeg', 'png'])
+            if t1img1 is not None:
+                st.image(t1img1, caption= 'This is your reference image')
+                # st.write(t1img1)
+        with t1col2: 
+            t1img2 = st.file_uploader('Upload your test image...',accept_multiple_files= False, 
+                                      type = ['jpg', 'jpeg', 'png'],)
+            if t1img2 is not None:
+                st.image(t1img2, caption= 'This is your input image')
+        if (t1img1 is not None) and (t1img2 is not None):
+            newimg1, newimg2, verification_stat = face_recognition(t1img1, t1img2)
+            verifcation_page(drawed_img1=newimg1, drawed_img2=newimg2, verification_stat=verification_stat)
 
-        if result["verified"]:
-            st.write("FACE IS MATCHED")
-            #  draw_result("MATCHED", green_color, image1, image2)
-        else:
-            st.write("FACE IS NOT MATCHED")
-            # draw_result("UNMATCHED", red_color, image1, image2)
-        
-        # cv2.namedWindow("image1", flags=cv2.WINDOW_NORMAL)
-        # cv2.namedWindow("image2", flags=cv2.WINDOW_NORMAL)
-
-        # cv2.imshow("img_card", image1)
-        # cv2.imshow("img_face", image2)
-
-        # cv2.imwrite("./person2_result5.jpg", image1)
-        # cv2.imwrite("./person2_card.jpg", image2)
-
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-
-
+    with tab2:
+        t2col1, t2col2 = st.columns(2)
+        with t2col1:
+            t2img1 =  st.file_uploader('Upload your reference image..',accept_multiple_files= False, 
+                                      type = ['jpg', 'jpeg', 'png'])
+            if t2img1 is not None:
+                st.image(t2img1, caption= 'This is your reference image')
+        with t2col2:
+            t2img2 = st.camera_input('Take a photo to verify image')
+            if t2img2 is not None:
+                st.image(t2img2, caption = 'This is your captured image')
+        if (t2img1 is not None) and (t2img2 is not None):
+            newimg1, newimg2, verification_stat = face_recognition(t2img1, t2img2)
+            verifcation_page(drawed_img1=newimg1, drawed_img2=newimg2, verification_stat=verification_stat)
     
+def test_img_database_page():
+    st.subheader('This is to check between the input image and database image')
+    tab1, tab2 = st.tabs(['Upload from local file', 'Take a photo'])
+    with tab1:
+        img_up = st.file_uploader('Upload your test image here...', type= ['jpg', 'jpeg', 'png'], 
+                            accept_multiple_files=False)
+        if img_up is not None:
+            st.image(img_up, caption='This is your test image')
+            for f in os.listdir('./database_img'):
+                data_img_path = os.path.join('./database_img', f)
+                drawim1, drawim2, ver_state = face_recognition(data_img_path,img_up)
+                if ver_state:
+                    existed_in_data = True
+                    draw_image1 = drawim1
+                    draw_image2 = drawim2
+                    break
+                else:
+                    existed_in_data = False
+            if existed_in_data:
+                verifcation_page( drawed_img1=draw_image1, drawed_img2=draw_image2, verification_stat= ver_state)
+            else: 
+                st.error('\tThis person is unrecognized', icon="❌")
+    with tab2:
+        img_cam = st.camera_input('Take a photo to check with database')
+        if img_cam is not None:
+            for f in os.listdir('./database_img'):
+                img_path = os.path.join('./database_img', f)
+                drawim1, drawim2, ver_state = face_recognition(img_path, img_cam)
+                if ver_state:
+                    existed_in_data = True
+                    draw_image1 = drawim1
+                    draw_image2 = drawim2
+                    break
+                else:
+                    existed_in_data = False
+            if existed_in_data:
+                verifcation_page( drawed_img1=draw_image1, drawed_img2=draw_image2, verification_stat= ver_state)
+            else: 
+                st.error('\tThis person is unrecognized', icon="❌")
 
+
+
+def database_img_page():
+    st.subheader('This is the database images')
+    directory = './database_img'
+    image_files = sorted([f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))])
+    num_columns = 3
+
+    for i in range(0, len(image_files), num_columns):
+        col1, col2, col3 = st.columns(num_columns)
+        for j, col in enumerate([col1, col2, col3]):
+            if i + j < len(image_files):
+                image_path = os.path.join(directory, image_files[i + j])
+                image = Image.open(image_path)
+                col.image(image, use_column_width=True, caption=image_files[i + j])
+            else:
+                col.empty()
+
+def setting_page():
+    st.header('There is nothing here yet!')
+
+def main():
+    st.set_page_config(
+    page_title="AI Face Matching Demo",
+    layout="wide",
+    initial_sidebar_state="expanded"
+    )
+    selected = top_page_stateless()
+    if selected == 'Test between 2 images':
+        test_2_img_page() 
+    elif selected == 'Test image with database':
+        test_img_database_page()
+    elif selected == 'Database images':
+        database_img_page()
+    elif selected == 'Setting':
+        add_img_to_database()
+        # setting_page()
+        
+    
+if __name__ == "__main__":
+    main()
