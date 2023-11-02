@@ -1,7 +1,6 @@
 deepface
 numpy
 Pillow
-PyYAML
 streamlit
 opencv-python-headless
 streamlit-option-menu
