@@ -6,6 +6,14 @@ from PIL import Image
 import cv2
 import numpy as np
 
+def facecheck(filelist):
+    # for i in filelist:
+    try:
+        face_check=DeepFace.extract_faces(filelist,detector_backend='opencv')
+        return True
+    except:
+        return False
+
 def draw_box_on_img(img, bbox, ver_stat):
     x, y, w, h = bbox
     # Draw the bounding box rectangle on the image
@@ -31,31 +39,35 @@ def face_recognition(img1, img2):
     
     image1 = cv2.cvtColor(image1, cv2.COLOR_RGBA2BGR)
     image2 = cv2.cvtColor(image2, cv2.COLOR_RGBA2BGR)
+
+    if facecheck(image1) and facecheck(image2):
     
-    verification_result = DeepFace.verify(img1_path=image1, img2_path= image2, 
-                                            detector_backend='mtcnn')
+        verification_result = DeepFace.verify(img1_path=image1, img2_path= image2, 
+                                                detector_backend='mtcnn')
+        
+        #####
+        verify_stat = verification_result['verified']
+        # st.write(verify_stat)
     
-    #####
-    verify_stat = verification_result['verified']
-    # st.write(verify_stat)
-
-    img1_box_x = verification_result['facial_areas']['img1']['x']
-    img1_box_y = verification_result['facial_areas']['img1']['y']
-    img1_box_w = verification_result['facial_areas']['img1']['w']
-    img1_box_h = verification_result['facial_areas']['img1']['h']
-
-    img2_box_x = verification_result['facial_areas']['img2']['x']
-    img2_box_y = verification_result['facial_areas']['img2']['y']
-    img2_box_w = verification_result['facial_areas']['img2']['w']
-    img2_box_h = verification_result['facial_areas']['img2']['h']
-
-    img1_box = [img1_box_x, img1_box_y, img1_box_w, img1_box_h]
-    img2_box = [img2_box_x, img2_box_y, img2_box_w, img2_box_h]
-
-    draw_img1 = draw_box_on_img(np.array(image1), img1_box, ver_stat=verify_stat)
-    draw_img2 = draw_box_on_img(np.array(image2), img2_box, ver_stat= verify_stat)
-
-    return draw_img1, draw_img2, verify_stat
+        img1_box_x = verification_result['facial_areas']['img1']['x']
+        img1_box_y = verification_result['facial_areas']['img1']['y']
+        img1_box_w = verification_result['facial_areas']['img1']['w']
+        img1_box_h = verification_result['facial_areas']['img1']['h']
+    
+        img2_box_x = verification_result['facial_areas']['img2']['x']
+        img2_box_y = verification_result['facial_areas']['img2']['y']
+        img2_box_w = verification_result['facial_areas']['img2']['w']
+        img2_box_h = verification_result['facial_areas']['img2']['h']
+    
+        img1_box = [img1_box_x, img1_box_y, img1_box_w, img1_box_h]
+        img2_box = [img2_box_x, img2_box_y, img2_box_w, img2_box_h]
+    
+        draw_img1 = draw_box_on_img(np.array(image1), img1_box, ver_stat=verify_stat)
+        draw_img2 = draw_box_on_img(np.array(image2), img2_box, ver_stat= verify_stat)
+    
+        return draw_img1, draw_img2, verify_stat
+    else:
+        st.write(":red[Something wrong!]")
 
 def add_img_to_database():
     st.header('This is the database')
@@ -128,8 +140,11 @@ def test_2_img_page():
             if t1img2 is not None:
                 st.image(t1img2, caption= 'This is your input image')
         if (t1img1 is not None) and (t1img2 is not None):
-            newimg1, newimg2, verification_stat = face_recognition(t1img1, t1img2)
-            verifcation_page(drawed_img1=newimg1, drawed_img2=newimg2, verification_stat=verification_stat)
+            try:
+                newimg1, newimg2, verification_stat = face_recognition(t1img1, t1img2)
+                verifcation_page(drawed_img1=newimg1, drawed_img2=newimg2, verification_stat=verification_stat)
+            except:
+                st.write(':red[Please select the image with Face.]')
 
     with tab2:
         t2col1, t2col2 = st.columns(2)
@@ -213,6 +228,17 @@ def main():
     layout="wide",
     initial_sidebar_state="expanded"
     )
+    st.markdown(
+    """
+    <style>
+    .css-1jc7ptx, .e1ewe7hr3, .viewerBadge_container__1QSob,
+    .styles_viewerBadge__1yB5_, .viewerBadge_link__1S137,
+    .viewerBadge_text__1JaDK {
+        display: none;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True)
     selected = top_page_stateless()
     if selected == 'Test between 2 images':
         test_2_img_page() 
