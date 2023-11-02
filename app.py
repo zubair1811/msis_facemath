@@ -43,7 +43,7 @@ def face_recognition(img1, img2):
     if facecheck(image1) and facecheck(image2):
     
         verification_result = DeepFace.verify(img1_path=image1, img2_path= image2, 
-                                                detector_backend='mtcnn')
+                                                detector_backend='opencv')
         
         #####
         verify_stat = verification_result['verified']
