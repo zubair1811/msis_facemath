@@ -4,4 +4,3 @@ Pillow
 streamlit
 opencv-python-headless
 streamlit-option-menu
-shutil
