@@ -123,7 +123,7 @@ def top_page_stateless():
     with col1: 
         st.title('AI Face Matching Demo')
     with col2:
-        st.image('./logo.png', width=80)
+        st.image('./logo.png', width=150)
     st.markdown("\n\n")
     st.caption('This is a demo where you can test the faces between 2 individuals and show if it is the same person')
     with st.sidebar:
