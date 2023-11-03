@@ -269,15 +269,6 @@ def main():
         header { visibility: hidden; }
         #MainMenu {visibility: visible;}
         footer {visibility: hidden;}
-        footer :after{
-             content:'MSIS';
-             visibility: visible;
-             display: block;
-             position: relative;
-             #background-color: red;
-             padding: 5px;
-             top: 2px;
-        }
     </style>
     """
     st.markdown(hide, unsafe_allow_html=True)
