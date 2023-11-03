@@ -8,8 +8,6 @@ import numpy as np
 import shutil
 
 
-
-
 def draw_box_on_img(img, bbox, ver_stat):
     x, y, w, h = bbox
     # Draw the bounding box rectangle on the image
@@ -124,8 +122,8 @@ def top_page_stateless():
     col1, col2 = st.columns([9,1])
     with col1: 
         st.title('AI Face Matching Demo')
-    # with col2:
-    #     st.image('./logo.png', width=80)
+    with col2:
+        st.image('./logo.png', width=80)
     st.markdown("\n\n")
     st.caption('This is a demo where you can test the faces between 2 individuals and show if it is the same person')
     with st.sidebar:
@@ -260,6 +258,14 @@ def main():
     layout="wide",
     initial_sidebar_state="expanded"
     )
+    hide = """
+    <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+    </style>
+    """
+    st.markdown(hide, unsafe_allow_html=True)
+    
     selected = top_page_stateless()
     if selected == 'Test between 2 images':
         test_2_img_page() 
