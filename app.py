@@ -121,7 +121,8 @@ def verifcation_page(drawed_img1, drawed_img2, verification_stat):
 def top_page_stateless():
     col1, col2 = st.columns([9,1])
     with col1: 
-        st.title(' :blue[AI Face Matching Demo] ', divider='rainbow')
+        st.title('AI Face Matching Demo')
+        st.divider()
     with col2:
         st.image('./logo.png', width=200)
     st.markdown("\n\n")
