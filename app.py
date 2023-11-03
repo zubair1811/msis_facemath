@@ -267,7 +267,7 @@ def main():
         }
         footer { visibility: hidden; } 
         header { visibility: hidden; }
-        # #MainMenu {visibility: hidden;}
+        #MainMenu {visibility: visible;}
         # footer {visibility: hidden;}
     </style>
     """
