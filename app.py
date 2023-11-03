@@ -122,7 +122,6 @@ def top_page_stateless():
     col1, col2 = st.columns([9,1])
     with col1: 
         st.title('AI Face Matching Demo')
-        st.divider()
     with col2:
         st.image('./logo.png', width=200)
     st.markdown("\n\n")
